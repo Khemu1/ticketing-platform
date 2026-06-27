@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import { Serialize } from '@shared/interceptors/serialize.interceptors';
-import { AuthDto, CreateAuthDto, LoginAuthDto } from './dto/auth.dtos';
+import { AuthDto, CreateAuthDto, LoginAuthDto } from '@shared/dtos/auth.dtos';
 import { JwtService } from '@nestjs/jwt';
 
 @Serialize(AuthDto)
@@ -13,7 +13,7 @@ export class AuthController {
     private jwtService: JwtService,
   ) {}
 
-  @MessagePattern('RegisterAuth')
+  @MessagePattern('registerAuth')
   async create(@Payload() createAuthDto: CreateAuthDto) {
     const user = await this.authService.create(createAuthDto);
     const token = await this.jwtService.signAsync({

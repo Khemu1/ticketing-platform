@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PaymentStatus } from '@shared/types';
+import { PaymentStatus } from '../types';
 
 @Entity('payments')
 export class Payment {

@@ -1,6 +1,8 @@
 import { promisify } from 'util';
 import { scrypt as _scrypt, randomBytes } from 'crypto';
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Users } from '@shared/entities/users.entity';
+import { EntityManager } from 'typeorm';
 
 const scrypt = promisify(_scrypt);
 
@@ -11,10 +13,23 @@ export const hashPassword = async (password: string) => {
   return res;
 };
 
-export const comparePassword = async (password: string, hashedPassword: string) => {
+export const comparePassword = async (
+  password: string,
+  hashedPassword: string,
+) => {
+  console.log('comparePassword', password, hashedPassword);
   const [salt, storedHash] = hashedPassword.split('.');
   const hash = (await scrypt(password, salt, 32)) as Buffer;
   if (storedHash !== hash.toString('hex')) {
     throw new UnauthorizedException('Invalid Credentials');
+  }
+};
+
+export const isEmailTaken = async (tx: EntityManager, email: string) => {
+  const user = await tx.findOne(Users, {
+    where: { email },
+  });
+  if (user) {
+    throw new ConflictException('Email already taken');
   }
 };

@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Tickets } from './ticket.entity';
-import { BookingStatus } from '@shared/types';
+import { BookingStatus } from '../types';
 
 @Entity('bookings')
 export class Bookings {

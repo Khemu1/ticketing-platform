@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
-import { IsString, MaxLength, MinLength, IsEmail } from 'class-validator';
+import { Roles } from "../types";
+import { Expose } from "class-transformer";
+import { IsString, MaxLength, MinLength, IsEmail } from "class-validator";
 
 export class AuthDto {
   @Expose()
@@ -8,6 +9,12 @@ export class AuthDto {
   name: string;
   @Expose()
   email: string;
+
+  @Expose()
+  role: Roles;
+
+  @Expose()
+  token: string;
 }
 
 export class CreateAuthDto {

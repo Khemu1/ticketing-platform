@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TypeOrmConfigService } from '@/config/db/typeorm.config';
+import { TypeOrmConfigService } from '@shared/config/db/typeorm.config';
 import { AuthModule } from './auth/auth.module';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { GlobalErrorFilter } from '@shared/filters/global-error.filter';
@@ -12,7 +11,7 @@ import { CustomError } from '@shared/filters/CustomError';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: `.env.${process.env.NODE_ENV}`,
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService,
@@ -21,7 +20,7 @@ import { CustomError } from '@shared/filters/CustomError';
   ],
   providers: [
     {
-      provide: APP_PIPE, 
+      provide: APP_PIPE,
       useValue: new ValidationPipe({
         transform: true,
         whitelist: true,

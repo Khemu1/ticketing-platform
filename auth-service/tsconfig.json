@@ -6,7 +6,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/src/*"]
-    }
+    },
+    "sourceMap": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test"]

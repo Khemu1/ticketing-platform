@@ -1,18 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from '@shared/entities/users.entity';
-import { Repository } from 'typeorm';
-import { CreateAuthDto, LoginAuthDto } from './dto/auth.dtos';
-import { comparePassword, hashPassword } from './auth.helpers';
+import { In, Repository } from 'typeorm';
+import { CreateAuthDto, LoginAuthDto } from '@shared//dtos/auth.dtos';
+import { comparePassword, hashPassword, isEmailTaken } from './auth.helpers';
+import { Roles } from '@shared/types';
 
 @Injectable()
 export class AuthService {
   constructor(@InjectRepository(Users) private repo: Repository<Users>) {}
 
   async create(createAuthDto: CreateAuthDto) {
+    await isEmailTaken(this.repo.manager, createAuthDto.email);
     const hashedPassword = await hashPassword(createAuthDto.password);
     createAuthDto.password = hashedPassword;
-    const createdUser = this.repo.save(createAuthDto, {
+    const createdUser = await this.repo.save(createAuthDto, {
       transaction: true,
     });
     return {
@@ -24,11 +30,20 @@ export class AuthService {
   }
 
   async login(loginAuthDto: LoginAuthDto) {
+    console.log('loginAuthDto', loginAuthDto);
+    const rawUser = await this.repo.query(
+      'SELECT * FROM users WHERE email = $1',
+      [loginAuthDto.email],
+    );
+    console.log('raw:', rawUser);
+
     const user = await this.repo.findOne({
       where: {
         email: loginAuthDto.email,
       },
     });
+    console.log('findOne:', user);
+
     if (!user) {
       throw new NotFoundException('Invalid Credentials');
     }
@@ -39,5 +54,18 @@ export class AuthService {
       created_at: undefined,
       updated_at: undefined,
     };
+  }
+
+  async doesUserWithRoleExist(id: string, role: Roles[]) {
+    const user = await this.repo.findOne({
+      where: {
+        id,
+        role: In(role),
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Not authorized');
+    }
+    return user;
   }
 }

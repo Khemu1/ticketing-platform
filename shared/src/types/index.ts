@@ -1,18 +1,16 @@
 export enum Roles {
-  ORGANIZER = 'organizer',
-  USER = 'user',
+  ORGANIZER = "organizer",
+  USER = "user",
 }
 
-export enum BookingStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  CANCELLED = 'cancelled',
-  FAILED = 'failed',
+
+
+export interface JwtPayload {
+  user_id: string;
+  role: Roles;
 }
 
-export enum PaymentStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  CANCELLED = 'cancelled',
-  FAILED = 'failed',
+
+export interface RequestWithUser extends Request {
+  user: JwtPayload;
 }

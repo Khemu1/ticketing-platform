@@ -2,15 +2,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Roles } from '@/types';
+} from "typeorm";
+import { Roles } from "../types";
 
-@Entity('users')
+@Entity("users")
 export class Users {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
@@ -22,7 +21,7 @@ export class Users {
   @Column()
   password: string;
 
-  @Column('enum', { enum: Roles,default: Roles.USER })
+  @Column("enum", { enum: Roles, default: Roles.USER })
   role: Roles;
 
   @CreateDateColumn()
@@ -30,5 +29,4 @@ export class Users {
 
   @UpdateDateColumn()
   updated_at: Date;
-
 }

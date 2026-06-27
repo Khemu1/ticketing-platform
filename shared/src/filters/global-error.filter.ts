@@ -1,21 +1,33 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-// global-error.filter.ts
 import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
   HttpException,
 } from "@nestjs/common";
-import { Request, Response } from "express";
+import { Response } from "express";
 import { CustomError } from "./CustomError";
+import { throwError } from "rxjs";
 
 const SAFE_STATUS_CODES = new Set([400, 401, 403, 404, 409, 410, 422]);
 
-@Catch() // catches everything
+@Catch()
 export class GlobalErrorFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    const type = host.getType();
+
+    if (type === "rpc") {
+      const error = this.normalize(exception);
+      return throwError(() => ({
+        statusCode: error.statusCode,
+        message: error.message,
+        type: error.type,
+        safe: error.safe,
+        details: error.details,
+        errors: error.errors,
+      }));
+    }
+
+    // HTTP context (api-gateway)
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
 
@@ -24,18 +36,14 @@ export class GlobalErrorFilter implements ExceptionFilter {
     const error = this.normalize(exception);
     const isProd = process.env.NODE_ENV === "production";
 
+    console.log("isProd", isProd, process.env.NODE_ENV);
+
     return isProd ? this.sendProd(error, res) : this.sendDev(error, res);
   }
 
-  // ─── normalize anything into a CustomError ───────────────────────
   private normalize(exception: unknown): CustomError {
-    // already a CustomError
-    if (exception instanceof CustomError) {
-      return exception;
-    }
+    if (exception instanceof CustomError) return exception;
 
-    // NestJS built-in (NotFoundException, UnauthorizedException, etc.)
-    // Inside normalize() method
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       const raw: any = exception.getResponse();
@@ -53,22 +61,32 @@ export class GlobalErrorFilter implements ExceptionFilter {
         type,
         SAFE_STATUS_CODES.has(statusCode),
         details,
-        errors, // Now securely passed out to your response!
+        errors,
       );
     }
 
-    // plain Error
+    // errors coming back from microservices via RabbitMQ
+    if (
+      typeof exception === "object" &&
+      exception !== null &&
+      "statusCode" in exception
+    ) {
+      const err = exception as any;
+      return new CustomError(
+        err.message || "An error occurred",
+        err.statusCode || 500,
+        err.type || "server error",
+        SAFE_STATUS_CODES.has(err.statusCode),
+        err.details,
+        err.errors,
+      );
+    }
+
     if (exception instanceof Error) {
       console.error("Unexpected error", exception);
-      return new CustomError(
-        exception.message || "حدث خطأ غير متوقع",
-        500,
-        "server error",
-        false,
-      );
+      return new CustomError(exception.message, 500, "server error", false);
     }
 
-    // totally unknown
     console.error("Unknown error type", exception);
     return new CustomError(
       "An unknown error occurred",
@@ -78,7 +96,6 @@ export class GlobalErrorFilter implements ExceptionFilter {
     );
   }
 
-  // ─── response senders ────────────────────────────────────────────
   private sendDev(error: CustomError, res: Response) {
     const { statusCode, status, message, stack, type, details, errors } = error;
 
@@ -117,7 +134,7 @@ export class GlobalErrorFilter implements ExceptionFilter {
       console.error("Critical Error (Hidden in Response)", error);
       res.status(500).json({
         status: "error",
-        message: "حدث خطأ غير متوقع",
+        message: "An unexpected error occurred",
       });
     }
   }
